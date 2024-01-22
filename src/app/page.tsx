@@ -1,95 +1,74 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client";
+
+import { Grid } from "@/components/Grid";
+import { container, row } from "./style.css";
+import { AsideMenu } from "@/components/AsideMenu";
+import { Providers } from "@/providers";
+import "./global.css";
+import { useState } from "react";
+import { getEventCoordinates } from "@dnd-kit/utilities";
+import { DndContext, pointerWithin } from "@dnd-kit/core";
+import { Tile } from "@/context/tileset";
+import { useGrid } from "@/hooks/useGrid";
 
 export default function Home() {
+  const [isDroppedId, setIsDroppedId] = useState<string>();
+  const [droppedData, setDroppedData] = useState<Tile>();
+
+  const { size, handleChangeSize } = useGrid();
+
+  const handleDragEnd = (event) => {
+    if (event.active) setDroppedData(event.active.data.current);
+    if (event.over) setIsDroppedId(event.over.id);
+  };
+
+  const snapBottomLeftToCursor = (_ref) => {
+    let { activatorEvent, draggingNodeRect, transform } = _ref;
+
+    if (draggingNodeRect && activatorEvent) {
+      const activatorCoordinates = getEventCoordinates(activatorEvent);
+
+      if (!activatorCoordinates) {
+        return transform;
+      }
+
+      const offsetX = activatorCoordinates.x - draggingNodeRect.left;
+      const offsetY = activatorCoordinates.y - draggingNodeRect.bottom;
+      return {
+        ...transform,
+        x: transform.x + offsetX - draggingNodeRect.width / 2 + size / 2,
+        y: transform.y + offsetY + size / 2,
+      };
+    }
+
+    return transform;
+  };
+
+  // useEffect(() => {
+  //   handleChangeSize(16);
+  // }, []);
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
+    <Providers>
+      <DndContext
+        onDragEnd={handleDragEnd}
+        modifiers={[snapBottomLeftToCursor]}
+        collisionDetection={pointerWithin}
+      >
+        <div className={container}>
+          <div className={row}>
+            <Grid
+              width={512}
+              height={320}
+              isDroppedId={isDroppedId}
+              data={droppedData}
             />
-          </a>
+          </div>
+          <div className={row}>
+            <AsideMenu />
+          </div>
         </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+      </DndContext>
+    </Providers>
+  );
 }
